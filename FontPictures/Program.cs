@@ -27,56 +27,93 @@ namespace FontPictures
             public bool ListMode { get; set; }
         }
 
+        //Note: Main has to be static because it's the main entry point to the program! It needs to initialize non-static things to call non-static things.
+        //Main is not non-static because there's nothing that runs before to initialize it.
+        //So you could indeed make an instance of the Program Class in here and then do all the heavy lifting in the non-static thing.
+        public bool Verbose { get; set; }
         static void Main(string[] args)
         {
             //initialize font lists & update config
+#if DEBUG
+            args = new [] { "-l" };
+#endif
+            Config conf = new Config();
+            Program textile = new Program();
 
         Parser.Default.ParseArguments<Options>(args)
                    .WithParsed<Options>(o =>
                    {
                        if (o.ListMode)
                        {
-                           //list contents of 
+                           //list contents of Font directory.
+                           ListFontsToConsole();
                        }
-                       if (o.Verbose)
-                       {
-                           Console.WriteLine($"Verbose output enabled. Current Arguments: -v {o.Verbose}");
-                           Console.WriteLine("Quick Start Example! App is in Verbose mode!" + o.Font);
-                       }
-                       else
-                       {
-                           Console.WriteLine($"Current Arguments: -v {o.Verbose}");
-                           Console.WriteLine("Quick Start Example!");
-                       }
+                       textile.Verbose = o.Verbose;
                    });
+            //after settings of the program are populated, it can be called to do real work.
+            textile.RealWork();
+        }
+        public void RealWork()
+        {
+
+        }
+
+        public static void ListFontsToConsole()
+        {
+            string fontsPath = AppDomain.CurrentDomain.BaseDirectory + "\\Fonts";
+            if (!Directory.Exists(fontsPath))
+            {
+                Directory.CreateDirectory(fontsPath);
+            }
+            string[] subDirs = Directory.GetDirectories(fontsPath);
+            List<string> validFonts = new List<string>();
+            foreach (string dir in subDirs)
+            {
+                foreach (string file in Directory.GetFiles(dir))
+                {
+                    if(Path.GetFileName(file) == "font.xml")
+                    {
+                        validFonts.Add(dir);
+                    }
+                }
+            }
+            foreach (string item in subDirs)
+            {
+                Console.WriteLine(item.Substring(item.LastIndexOf('\\')+1));
+            }
+            return;
         }
         public class Config
         {
-            public string MostRecentFont { get; set; }
+            private string MostRecentFont { get; set; }
             public string ConfigPath { get; set; }
+            public Config()
+            {
+                ConfigPath = AppDomain.CurrentDomain.BaseDirectory + "config.xml";
+                InitializeConfig();
+            }
             public void InitializeConfig()
             {
-                string configPath = AppDomain.CurrentDomain.BaseDirectory + "config.xml";
-                if (!File.Exists(configPath))
+                if (!File.Exists(ConfigPath))
                 {
                     CreateNewConfig();
                 }
                 XmlDocument config = new XmlDocument();
-                config.Load(configPath);
+                config.Load(ConfigPath);
                 XmlNode root = config.LastChild;
 
                 MostRecentFont = root.SelectSingleNode(ConfigContents.MostRecentlyUsedFont).InnerText;
 
                 return;
             }
-            public void CreateNewConfig()
+            private void CreateNewConfig()
             {
-                string configPath = AppDomain.CurrentDomain.BaseDirectory + "config.xml";
+                ConfigPath = AppDomain.CurrentDomain.BaseDirectory + "config.xml";
                 XmlWriterSettings set = new XmlWriterSettings
                 {
                     Indent = true
                 };
-                XmlWriter foo = XmlWriter.Create(configPath, set);
+                XmlWriter foo = XmlWriter.Create(ConfigPath, set);
                 foo.WriteStartDocument();
                 foo.WriteStartElement("config");    //root element
                 foo.WriteElementString(ConfigContents.Comment, ConfigContents.HeaderComment);
