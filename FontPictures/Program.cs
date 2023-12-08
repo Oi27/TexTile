@@ -148,23 +148,15 @@ namespace FontPictures
                 overlays.Add((letter));
             }
             //we have the final dimensions of the bitmap and a list of the characters ready to go.
+            //draw loop does not need to do word wrapping yet. draw them in a single row.
             Bitmap finalImage = new Bitmap(maxWidth, runningHeight);
             Graphics composite = Graphics.FromImage(finalImage);
             composite.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
-            maxWidth = 0;
             runningWidth = 0;
             runningHeight = 0;
-            wrapCount = 0;
             foreach (Image letter in overlays)
             {
-                maxWidth += letter.Width;
                 runningWidth += letter.Width;
-                if (runningWidth >= WordWrap)
-                {
-                    runningWidth = 0;
-                    wrapCount++;
-                }
-                if (runningHeight == 0) { runningHeight = letter.Height; }
                 composite.DrawImage(letter, runningWidth, runningHeight);
             }
             finalImage.Save(DestinationPath);
