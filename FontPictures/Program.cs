@@ -47,7 +47,7 @@ namespace FontPictures
         {
             //initialize font lists & update config
 #if DEBUG
-            //args = new [] { "-f", "test", "-v" };
+            args = new [] { "AB", "-f", "test", "-v" };
 #endif
             MainConfig conf = new MainConfig();
             Program textile = new Program();
@@ -55,7 +55,7 @@ namespace FontPictures
             if (args.Length == 0) { Console.WriteLine("No text specified."); return; }
             textile.Text = args[0];
 
-        Parser.Default.ParseArguments<Options>(args)
+            Parser.Default.ParseArguments<Options>(args)
                    .WithParsed<Options>(o =>
                    {
                        if (o.ListMode)
@@ -79,10 +79,11 @@ namespace FontPictures
                            return;
                        }
                        if (o.Verbose) { Console.WriteLine("Valid font specified."); }
+
                        textile.FontDirectory = fontsPath + o.Font.Trim();
                        textile.FontConfigPath = textile.FontDirectory + "\\font.xml";
 
-                       if(o.Scale == 0)
+                       if (o.Scale == 0)
                        {
                            textile.Scale = 1;
                        }
@@ -112,13 +113,61 @@ namespace FontPictures
         public void GenerateImage()
         {
             //search out pictures in the font folder for each character in the string and align them on a new PNG.
+            //all the images need to be the same vertical height or it will mess things up...
+            //maybe word wrap will chop it up and rearrange a very wide normal image.
             FontConfig theFont = new FontConfig(FontConfigPath);
             if (theFont.UpperCaseOnly) { this.Text = this.Text.ToUpper(); }
+            int maxWidth = 0;
+            int runningWidth = 0;
+            int runningHeight = 0;
+            int wrapCount = 0;
+            List<int> wrapAtCharacters = new List<int>();
+            List<Image> overlays = new List<Image>();
             for(int i = 0; i < this.Text.Length; i++)
             {
-                Image letter = Image.FromFile("");
+                string lookfor = this.Text[i].ToString();
+                string match = null;
+                foreach (string item in Directory.GetFiles(this.FontDirectory))
+                {
+                    if (Path.GetFileNameWithoutExtension(item) == lookfor)
+                    {
+                        match = item;
+                        break;
+                    }
+                }
+                Image letter = Image.FromFile(match);
+                maxWidth += letter.Width;
+                runningWidth += letter.Width;
+                if (runningWidth >= WordWrap) 
+                {
+                    wrapAtCharacters.Add(i);
+                    runningWidth = 0;
+                    wrapCount++;
+                }
+                if(runningHeight == 0) { runningHeight = letter.Height; }
+                overlays.Add((letter));
             }
-
+            //we have the final dimensions of the bitmap and a list of the characters ready to go.
+            Bitmap finalImage = new Bitmap(maxWidth, runningHeight);
+            Graphics composite = Graphics.FromImage(finalImage);
+            composite.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
+            maxWidth = 0;
+            runningWidth = 0;
+            runningHeight = 0;
+            wrapCount = 0;
+            foreach (Image letter in overlays)
+            {
+                maxWidth += letter.Width;
+                runningWidth += letter.Width;
+                if (runningWidth >= WordWrap)
+                {
+                    runningWidth = 0;
+                    wrapCount++;
+                }
+                if (runningHeight == 0) { runningHeight = letter.Height; }
+                composite.DrawImage(letter, runningWidth, runningHeight);
+            }
+            finalImage.Save(DestinationPath);
         }
 
         #region CLI
@@ -177,7 +226,7 @@ namespace FontPictures
                 ConfigPath = configPath;
                 InitializeConfig();
             }
-            public void InitializeConfig()
+            private void InitializeConfig()
             {
                 if (!File.Exists(ConfigPath))
                 {
@@ -193,7 +242,6 @@ namespace FontPictures
             }
             private void CreateNewConfig()
             {
-                ConfigPath = AppDomain.CurrentDomain.BaseDirectory + "config.xml";
                 XmlWriterSettings set = new XmlWriterSettings
                 {
                     Indent = true
