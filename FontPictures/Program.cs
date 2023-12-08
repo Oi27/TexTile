@@ -116,7 +116,7 @@ namespace FontPictures
             if (theFont.UpperCaseOnly) { this.Text = this.Text.ToUpper(); }
             for(int i = 0; i < this.Text.Length; i++)
             {
-                System.Drawing.Image;
+                Image letter = Image.FromFile("");
             }
 
         }
