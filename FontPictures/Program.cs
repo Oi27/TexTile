@@ -48,7 +48,7 @@ namespace FontPictures
         {
             //initialize font lists & update config
 #if DEBUG
-            args = new [] { "@BAD DABA ", "-f", "test", "-s", "8" };
+            args = new [] { "@BAD DABAD ", "-f", "test", "-s", "8" };
 #endif
             if (!Directory.Exists(fontsPath)) { Directory.CreateDirectory(fontsPath); }
             Program.CreateFontConfig(fontsPath + "font.xml");
@@ -168,6 +168,7 @@ namespace FontPictures
                 if (runningHeight == 0) { runningHeight = letter.Height; }
                 overlays.Add((letter));
             }
+            int maxHeight = runningHeight;
             //add a positive font offset to the end if the parameter was negative (does this always apply?)
             if (theFont.FontOffset < 0) { maxWidth += Math.Abs(theFont.FontOffset); }
             //we have the final dimensions of the bitmap and a list of the characters ready to go.
@@ -192,8 +193,11 @@ namespace FontPictures
                 runningWidth += letter.Width + theFont.FontOffset;
             }
             //if bordered, the new size can be calculated & we can drop this whole assembly on top
-            // SKBitmap resizes crisp.
-            SKImageInfo resizeInfo = new SKImageInfo(maxWidth*this.Scale, 8*this.Scale);
+
+            //code here
+
+            //Scaling is the last thing to take care of:
+            SKImageInfo resizeInfo = new SKImageInfo(maxWidth*this.Scale, maxHeight*this.Scale);
             using (SKBitmap srcBitmap = SKBitmap.FromImage(surface.Snapshot()))
             using (SKBitmap resizedSKBitmap = srcBitmap.Resize(resizeInfo, SKFilterQuality.None))
             using (SKImage newImg = SKImage.FromBitmap(resizedSKBitmap))
