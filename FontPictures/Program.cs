@@ -8,6 +8,7 @@ using System.Drawing.Imaging;
 using System.Xml;
 using System.IO;
 using CommandLine;
+using SkiaSharp;
 
 namespace FontPictures
 {
@@ -47,7 +48,7 @@ namespace FontPictures
         {
             //initialize font lists & update config
 #if DEBUG
-            args = new [] { "AB", "-f", "test", "-v" };
+            args = new [] { "@BAD DAB ", "-f", "test", "-v" };
 #endif
             Program.CreateFontConfig(fontsPath + "font.xml");
             MainConfig conf = new MainConfig();
@@ -127,12 +128,18 @@ namespace FontPictures
             int maxWidth = 0;
             int runningWidth = 0;
             int runningHeight = 0;
-            int wrapCount = 0;
-            List<int> wrapAtCharacters = new List<int>();
-            List<Image> overlays = new List<Image>();
-            for(int i = 0; i < this.Text.Length; i++)
+            List<SKImage> overlays = new List<SKImage>();
+            for (int i = 0; i < this.Text.Length; i++)
             {
                 string lookfor = this.Text[i].ToString();
+                switch (lookfor)
+                {
+                    case " ":
+                        lookfor = "space";
+                        break;
+                    default:
+                        break;
+                }
                 string match = null;
                 foreach (string item in Directory.GetFiles(this.FontDirectory))
                 {
@@ -142,31 +149,47 @@ namespace FontPictures
                         break;
                     }
                 }
-                Image letter = Image.FromFile(match);
-                maxWidth += letter.Width;
-                runningWidth += letter.Width;
-                if (runningWidth >= WordWrap) 
+                if (match == null)
                 {
-                    wrapAtCharacters.Add(i);
-                    runningWidth = 0;
-                    wrapCount++;
+                    Console.WriteLine("Character not found! Missing \"" + lookfor + "\" in fonts folder.");
+                    Console.WriteLine("Aborting image generation.");
+                    return;
                 }
-                if(runningHeight == 0) { runningHeight = letter.Height; }
+                SKImage letter = SKImage.FromEncodedData(match);
+                maxWidth += letter.Width + theFont.FontOffset;
+                runningWidth += letter.Width + theFont.FontOffset;
+                if (runningHeight == 0) { runningHeight = letter.Height; }
                 overlays.Add((letter));
             }
+            //add a positive font offset to the end if the parameter was negative (does this always apply?)
+            if (theFont.FontOffset < 0) { maxWidth += Math.Abs(theFont.FontOffset); }
             //we have the final dimensions of the bitmap and a list of the characters ready to go.
             //draw loop does not need to do word wrapping yet. draw them in a single row.
-            Bitmap finalImage = new Bitmap(maxWidth, runningHeight);
-            Graphics composite = Graphics.FromImage(finalImage);
-            composite.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
+            SKBitmap finalImage = new SKBitmap(maxWidth, runningHeight);
+            SKSurface surface = SKSurface.Create(finalImage.Info);
+            SKCanvas canvas = surface.Canvas;
+
+            //it would be nice to fill the canvas with a background color that suits the letters.
+            //Color pick the first pixel of the first tile?
+            SKColor fillColor = SKBitmap.FromImage(overlays[0]).GetPixel(0, 0);
+            using (SKPaint paint = new SKPaint(){Color = fillColor})
+            {
+                canvas.DrawRect(0, 0, finalImage.Width, finalImage.Height, paint);
+            };
             runningWidth = 0;
             runningHeight = 0;
-            foreach (Image letter in overlays)
+            foreach (SKImage letter in overlays)
             {
-                runningWidth += letter.Width;
-                composite.DrawImage(letter, runningWidth, runningHeight);
+                SKBitmap bitmapLetter = SKBitmap.FromImage(letter);
+                canvas.DrawBitmap(bitmapLetter, runningWidth, runningHeight);
+                runningWidth += letter.Width + theFont.FontOffset;
             }
-            finalImage.Save(DestinationPath);
+            using (SKImage shot = surface.Snapshot())
+            using(SKData data = shot.Encode(SKEncodedImageFormat.Png, 100))
+            using (FileStream stream = File.OpenWrite(DestinationPath))
+            {
+                data.SaveTo(stream);
+            }
         }
 
         #region CLI
@@ -228,6 +251,7 @@ namespace FontPictures
             //i think this could be a static class and it would work out...
             public bool UpperCaseOnly { set; get; }
             public string ConfigPath { get; set; }
+            public int FontOffset { set; get; }
             public FontConfig(string configPath)
             {
                 ConfigPath = configPath;
@@ -243,7 +267,8 @@ namespace FontPictures
                 config.Load(ConfigPath);
                 XmlNode root = config.LastChild;
 
-                UpperCaseOnly = bool.Parse(root.SelectSingleNode(Contents.UpperCaseOnly).InnerText);
+                UpperCaseOnly = bool.Parse(root.SelectSingleNode(nameof(Contents.UpperCaseOnly)).InnerText);
+                FontOffset = int.Parse(root.SelectSingleNode(Contents.FontOffset).InnerText);
 
                 return;
             }
@@ -257,21 +282,29 @@ namespace FontPictures
                 foo.WriteStartDocument();
                 foo.WriteStartElement("config");    //root element
                 foo.WriteElementString(Contents.Comment, Contents.HeaderComment);
-                foo.WriteElementString(Contents.UpperCaseOnly, "true");
+                foo.WriteElementString(nameof(Contents.UpperCaseOnly), Contents.UpperCaseOnly);
+                foo.WriteElementString(Contents.FontOffset, Contents.DefaultFontOffset.ToString());
+                Console.WriteLine(nameof(Contents.FontOffset));
                 foo.Close();
             }
 
             public static class Contents
             {
                 //contents of this class control the config generation and all references to the nodes.
-                public const string UpperCaseOnly = "UpperCaseOnly";
+                //not sure if it's better to have nameof() or just contents.uppercaseonly when referencing nodes of the config...
+                //nameof() improves readability of this class, while having duplicate strings in the config makes it more readable elsewhere.
+                public const string UpperCaseOnly = "true";
+                public const string FontOffset = "FontOffset";
+                public const int DefaultFontOffset = -1;
                 public const string Comment = "Comment";
 
                 public const string DefaultFont = "";
 
                 public const string HeaderComment =
                     "\n" +
-                    "Font Config" +
+                    "Copy this file into any font folders and customize it.\n" +
+                    "UppercaseOnly will convert queries to uppercase before checking: tiles are case sensitive.\n" +
+                    "FontOffset is an X offset to apply as tiles are drawn to the output file. Useful to have single-px character separation." +
                     "\n";
             }
         }
