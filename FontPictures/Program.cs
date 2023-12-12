@@ -49,12 +49,14 @@ namespace FontPictures
 #if DEBUG
             args = new [] { "AB", "-f", "test", "-v" };
 #endif
+            Program.CreateFontConfig(fontsPath + "font.xml");
             MainConfig conf = new MainConfig();
             Program textile = new Program();
 
             if (args.Length == 0) { Console.WriteLine("No text specified."); return; }
             textile.Text = args[0];
 
+            bool terminateDueToCommandArgs = false;
             Parser.Default.ParseArguments<Options>(args)
                    .WithParsed<Options>(o =>
                    {
@@ -62,6 +64,7 @@ namespace FontPictures
                        {
                            //list contents of Font directory.
                            ListFontsToConsole();
+                           terminateDueToCommandArgs = true;
                            return;
                        }
 
@@ -69,6 +72,7 @@ namespace FontPictures
                        if (o.Font == null)
                        {
                            Console.WriteLine("No font specified.");
+                           terminateDueToCommandArgs = true;
                            return;
                        }
                        //validate that the font exists first
@@ -76,6 +80,7 @@ namespace FontPictures
                        {
                            Console.WriteLine("Invalid font specified.");
                            //could go into detail on failure reasons here, esp. due to invalid config IF config validation is added.
+                           terminateDueToCommandArgs = true;
                            return;
                        }
                        if (o.Verbose) { Console.WriteLine("Valid font specified."); }
@@ -99,6 +104,7 @@ namespace FontPictures
                        else
                        {
                            Console.WriteLine("Destination path not yet handled!");
+                           terminateDueToCommandArgs = true;
                            return;
                        }
 
@@ -108,6 +114,7 @@ namespace FontPictures
                    });
             //after settings of the program are populated, it can be called to do real work.
             //at this point if no image text was provided, it will be the first option arg... -v seems apt. OK!
+            if (terminateDueToCommandArgs) { return; }
             textile.GenerateImage();
         }
         public void GenerateImage()
@@ -208,9 +215,17 @@ namespace FontPictures
             }
             return validFonts;
         }
+        public static void CreateFontConfig(string path)
+        {
+            //initialize a default config that can be copied into new font folders by the user.
+            FontConfig A = new FontConfig(path);
+            return;
+        }
+
         #endregion
         public class FontConfig
         {
+            //i think this could be a static class and it would work out...
             public bool UpperCaseOnly { set; get; }
             public string ConfigPath { get; set; }
             public FontConfig(string configPath)

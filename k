@@ -1,0 +1,51 @@
+[33mcommit 7f396d9fd33c45cb7184583dbcd1601d6e0ee73c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m
+Author: Scott Evans <sevans@cbpmail.onmicrosoft.com>
+Date:   Fri Dec 8 14:31:36 2023 -0500
+
+    Added fonts test folder to Git repo
+
+[33mcommit b84437108234babd32db88b1b71710cb8066d2f8[m
+Author: Scott Evans <sevans@cbpmail.onmicrosoft.com>
+Date:   Fri Dec 8 14:25:42 2023 -0500
+
+    removed redundant code & commented draw routine.
+    Initialization is still broken.
+
+[33mcommit a4282e746433ae0f2595fd870025407e24f40172[m
+Author: Scott Evans <sevans@cbpmail.onmicrosoft.com>
+Date:   Fri Dec 8 14:13:41 2023 -0500
+
+    Started adding the picture logic... program crashes on startup because the `return`s in the WithParsed statement cause program flow to jump back to Main() and do not cancel the program. So, if it has problems it starts up uninitialized and crashes. And we can't make the font config until it starts... so...
+    Need to make the font config generate separately somehow
+    And improve error handling in the cmd parser, because Return is no good.
+
+[33mcommit b40333385c4f6621151418c5f0a0f669c3a4fe7b[m
+Author: Scott Evans <sevans@cbpmail.onmicrosoft.com>
+Date:   Fri Dec 8 11:54:40 2023 -0500
+
+    Solved Image problem by downloaded system.drawing as a Nuget package. Getting a warning about this library being unsupported on .net 5.0 & that i should upgrade my target framework...
+
+[33mcommit a2328cf1310cede480913cba61ccc6b0f2241f09[m
+Author: Scott Evans <sevans@cbpmail.onmicrosoft.com>
+Date:   Fri Dec 8 11:47:45 2023 -0500
+
+    Finished CLI and started on basic functionality. Hit a roadblock with System.Drawing being unable to create an Image class......
+
+[33mcommit c5da0da1f7d39264482e13167565f70f74b4456b[m
+Author: Scott Evans <sevans@cbpmail.onmicrosoft.com>
+Date:   Thu Dec 7 15:54:17 2023 -0500
+
+    Commented & figured out some setup things:
+    -List valid fonts to console (done)
+
+[33mcommit 96a21313e75e034c2af39ca788c3b73e8f0de836[m
+Author: Scott Evans <sevans@cbpmail.onmicrosoft.com>
+Date:   Thu Dec 7 14:50:20 2023 -0500
+
+    Add project files.
+
+[33mcommit 0209bdbefe7bb1254fba32f9e7cc656e7f590127[m
+Author: Scott Evans <sevans@cbpmail.onmicrosoft.com>
+Date:   Thu Dec 7 14:50:18 2023 -0500
+
+    Add .gitignore and .gitattributes.
