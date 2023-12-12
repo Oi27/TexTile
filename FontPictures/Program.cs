@@ -48,8 +48,9 @@ namespace FontPictures
         {
             //initialize font lists & update config
 #if DEBUG
-            args = new [] { "@BAD DAB ", "-f", "test", "-v" };
+            args = new [] { "@BAD DABA ", "-f", "test", "-s", "8" };
 #endif
+            if (!Directory.Exists(fontsPath)) { Directory.CreateDirectory(fontsPath); }
             Program.CreateFontConfig(fontsPath + "font.xml");
             MainConfig conf = new MainConfig();
             Program textile = new Program();
@@ -72,7 +73,7 @@ namespace FontPictures
 
                        if (o.Font == null)
                        {
-                           Console.WriteLine("No font specified.");
+                           Console.WriteLine("No font specified. Use -f or --font as an argument.");
                            terminateDueToCommandArgs = true;
                            return;
                        }
@@ -89,6 +90,12 @@ namespace FontPictures
                        textile.FontDirectory = fontsPath + o.Font.Trim();
                        textile.FontConfigPath = textile.FontDirectory + "\\font.xml";
 
+                       if(o.Scale < 0)
+                       {
+                           Console.WriteLine("Scale cannot be negative!");
+                           terminateDueToCommandArgs = true;
+                           return;
+                       }
                        if (o.Scale == 0)
                        {
                            textile.Scale = 1;
@@ -184,8 +191,13 @@ namespace FontPictures
                 canvas.DrawBitmap(bitmapLetter, runningWidth, runningHeight);
                 runningWidth += letter.Width + theFont.FontOffset;
             }
-            using (SKImage shot = surface.Snapshot())
-            using(SKData data = shot.Encode(SKEncodedImageFormat.Png, 100))
+            //if bordered, the new size can be calculated & we can drop this whole assembly on top
+            // SKBitmap resizes crisp.
+            SKImageInfo resizeInfo = new SKImageInfo(maxWidth*this.Scale, 8*this.Scale);
+            using (SKBitmap srcBitmap = SKBitmap.FromImage(surface.Snapshot()))
+            using (SKBitmap resizedSKBitmap = srcBitmap.Resize(resizeInfo, SKFilterQuality.None))
+            using (SKImage newImg = SKImage.FromBitmap(resizedSKBitmap))
+            using (SKData data = newImg.Encode(SKEncodedImageFormat.Png, 100))
             using (FileStream stream = File.OpenWrite(DestinationPath))
             {
                 data.SaveTo(stream);
@@ -284,7 +296,6 @@ namespace FontPictures
                 foo.WriteElementString(Contents.Comment, Contents.HeaderComment);
                 foo.WriteElementString(nameof(Contents.UpperCaseOnly), Contents.UpperCaseOnly);
                 foo.WriteElementString(Contents.FontOffset, Contents.DefaultFontOffset.ToString());
-                Console.WriteLine(nameof(Contents.FontOffset));
                 foo.Close();
             }
 
