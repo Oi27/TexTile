@@ -48,7 +48,7 @@ namespace FontPictures
         {
             //initialize font lists & update config
 #if DEBUG
-            args = new [] { "@BAD DABAD ", "-f", "test", "-s", "8" };
+            args = new [] { "@BAD DAB ", "-f", "test", "-s", "8" };
 #endif
             if (!Directory.Exists(fontsPath)) { Directory.CreateDirectory(fontsPath); }
             Program.CreateFontConfig(fontsPath + "font.xml");
