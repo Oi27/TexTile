@@ -48,7 +48,7 @@ namespace FontPictures
         {
             //initialize font lists & update config
 #if DEBUG
-            args = new [] { "@BAD DAB ", "-f", "test", "-s", "8" };
+            args = new [] { "@BAD DAB ", "-f", "test", "-s", "8", "-l" };
 #endif
             if (!Directory.Exists(fontsPath)) { Directory.CreateDirectory(fontsPath); }
             Program.CreateFontConfig(fontsPath + "font.xml");
@@ -66,6 +66,7 @@ namespace FontPictures
                        {
                            //list contents of Font directory.
                            ListFontsToConsole();
+                           ListSpecialCharacters();
                            terminateDueToCommandArgs = true;
                            return;
                        }
@@ -139,14 +140,7 @@ namespace FontPictures
             for (int i = 0; i < this.Text.Length; i++)
             {
                 string lookfor = this.Text[i].ToString();
-                switch (lookfor)
-                {
-                    case " ":
-                        lookfor = "space";
-                        break;
-                    default:
-                        break;
-                }
+                lookfor = AdjustSpecialCharacters(lookfor);
                 string match = null;
                 foreach (string item in Directory.GetFiles(this.FontDirectory))
                 {
@@ -258,6 +252,73 @@ namespace FontPictures
         {
             //initialize a default config that can be copied into new font folders by the user.
             FontConfig A = new FontConfig(path);
+            return;
+        }
+        public static string AdjustSpecialCharacters(string queryCharacter)
+        {
+            string lookfor = queryCharacter;
+            switch (lookfor)
+            {
+                case " ":
+                    lookfor = "space";
+                    break;
+                case ".":
+                    lookfor = "period";
+                    break;
+                case ",":
+                    lookfor = "comma";
+                    break;
+                case "!":
+                    lookfor = "exclamation";
+                    break;
+                case "?":
+                    lookfor = "question";
+                    break;
+                case "<":
+                    lookfor = "less";
+                    break;
+                case ">":
+                    lookfor = "greater";
+                    break;
+                case ":":
+                    lookfor = "colon";
+                    break;
+                case ";":
+                    lookfor = "semicolon";
+                    break;
+                case "\"":
+                    lookfor = "doublequote";
+                    break;
+                case "\'":
+                    lookfor = "singlequote";
+                    break;
+                case "*":
+                    lookfor = "asterisk";
+                    break;
+                case "/":
+                    lookfor = "fwdslash";
+                    break;
+                case "\\":
+                    lookfor = "backslash";
+                    break;
+                case "|":
+                    lookfor = "vertical";
+                    break;
+                default:
+                    break;
+            }
+            return lookfor;
+        }
+        public static void ListSpecialCharacters()
+        {
+            const string specials =
+                " .,!?<>:;\"\'*/\\|";
+            Console.WriteLine("----------------\nImage Names for Special Characters:");
+            foreach (char item in specials)
+            {
+                Console.WriteLine(item.ToString() + " --- " + AdjustSpecialCharacters(item.ToString()));
+            }
+            Console.WriteLine("----------------");
             return;
         }
 
