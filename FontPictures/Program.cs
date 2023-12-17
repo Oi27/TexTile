@@ -108,7 +108,7 @@ namespace FontPictures
 
                        if(o.DestinationPath == null)
                        {
-                           textile.DestinationPath = AppDomain.CurrentDomain.BaseDirectory + "output.png";
+                           textile.DestinationPath = AppDomain.CurrentDomain.BaseDirectory + textile.Text + ".png";
                        }
                        else
                        {
@@ -191,14 +191,24 @@ namespace FontPictures
             //code here
 
             //Scaling is the last thing to take care of:
+            string fallbackPath = AppDomain.CurrentDomain.BaseDirectory + "output.png";
             SKImageInfo resizeInfo = new SKImageInfo(maxWidth*this.Scale, maxHeight*this.Scale);
             using (SKBitmap srcBitmap = SKBitmap.FromImage(surface.Snapshot()))
             using (SKBitmap resizedSKBitmap = srcBitmap.Resize(resizeInfo, SKFilterQuality.None))
             using (SKImage newImg = SKImage.FromBitmap(resizedSKBitmap))
             using (SKData data = newImg.Encode(SKEncodedImageFormat.Png, 100))
             using (FileStream stream = File.OpenWrite(DestinationPath))
+            using (FileStream backupStream = File.OpenWrite(fallbackPath))
             {
-                data.SaveTo(stream);
+                //TRY CATCH TO HANDLE IF THE DESTINATION PATH HAS INVALID CHARACTERS IN IT (?,$, ETC)
+                try
+                {
+                    data.SaveTo(stream);
+                }
+                catch
+                {
+                    data.SaveTo(backupStream);
+                }
             }
         }
 
