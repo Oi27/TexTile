@@ -137,10 +137,13 @@ namespace FontPictures
             int runningWidth = 0;
             int runningHeight = 0;
             List<SKImage> overlays = new List<SKImage>();
+            bool containsSpecialCharacters = false;
             for (int i = 0; i < this.Text.Length; i++)
             {
                 string lookfor = this.Text[i].ToString();
+                string cmp = lookfor;
                 lookfor = AdjustSpecialCharacters(lookfor);
+                if(lookfor != cmp) { containsSpecialCharacters = true; }
                 string match = null;
                 foreach (string item in Directory.GetFiles(this.FontDirectory))
                 {
@@ -197,18 +200,23 @@ namespace FontPictures
             using (SKBitmap resizedSKBitmap = srcBitmap.Resize(resizeInfo, SKFilterQuality.None))
             using (SKImage newImg = SKImage.FromBitmap(resizedSKBitmap))
             using (SKData data = newImg.Encode(SKEncodedImageFormat.Png, 100))
-            using (FileStream stream = File.OpenWrite(DestinationPath))
             using (FileStream backupStream = File.OpenWrite(fallbackPath))
             {
-                //TRY CATCH TO HANDLE IF THE DESTINATION PATH HAS INVALID CHARACTERS IN IT (?,$, ETC)
-                try
+                //IF TO HANDLE IF THE DESTINATION PATH HAS INVALID CHARACTERS IN IT (?,$, ETC)
+                if (containsSpecialCharacters)
                 {
-                    data.SaveTo(stream);
-                }
-                catch
-                {
+                    Console.WriteLine("Query text contains invalid file path characters. Defaulting to \".\\output.png\"");
                     data.SaveTo(backupStream);
+                    Console.WriteLine("Result saved to " + fallbackPath);
                 }
+                else
+                {
+                    FileStream stream = File.OpenWrite(DestinationPath);
+                    data.SaveTo(stream);
+                    stream.Dispose();
+                    Console.WriteLine("Result saved to " + DestinationPath);
+                }
+                
             }
         }
 
